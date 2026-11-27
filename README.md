@@ -102,6 +102,8 @@ npm run build
 
 ### Interactive Setup (`/relay-configure`)
 
+Relay ships with no hardcoded default models. Configure at least `builder` and `reviewer` before running `/relay` (either with `/relay-configure` or static `options.roles` in `opencode.jsonc`). Leaving `planner` unset runs planning on your current session model; leaving `explorer` unset omits `relay_explore`.
+
 Run `/relay-configure` inside an OpenCode session. Relay queries your currently enabled models and presents one batched `question` prompt containing 10 questions (4 role assignments + 6 settings):
 
 1. **Roles**: `planner`, `builder`, `reviewer` (image-capable models only), and `explorer`, each offering top 3 recommended candidates plus write-in support and optional variants.
@@ -111,7 +113,7 @@ Confirmed settings are validated by `validateSettings()` and persisted to plugin
 
 ### Orchestration Workflow (`/relay <task>`)
 
-1. **Brainstorm first (`/relay <task>`)**: Relay creates a `draft` record bound to the current session, temporarily switches the session model to the configured `planner` model (restoring the previous model on submission, cancellation, or closure), and enters **Phase 1: Brainstorm first** (when `brainstormFirst` is `true`, the default). The planner explores read-only (including via `relay_explore`), surfaces assumptions, presents 2-3 approaches with tradeoffs, risks, and non-goals, and aligns with you via `question` before calling any plan tools (with a fast-track option to draft immediately, or `relay_plan_cancel` if you decide not to build).
+1. **Brainstorm first (`/relay <task>`)**: Relay first verifies that `builder` and `reviewer` models are configured; if either is missing, `/relay` fails fast before creating a draft record, switching models, or starting a model turn and directs you to `/relay-configure`. Otherwise it creates a `draft` record bound to the current session, temporarily switches the session model to `roles.planner` when configured (keeping the current session model if `planner` is unset, and restoring the previous model on submission, cancellation, or closure), and enters **Phase 1: Brainstorm first** (when `brainstormFirst` is `true`, the default). The planner explores read-only (including via `relay_explore`), surfaces assumptions, presents 2-3 approaches with tradeoffs, risks, and non-goals, and aligns with you via `question` before calling any plan tools (with a fast-track option to draft immediately, or `relay_plan_cancel` if you decide not to build).
 2. **Draft plan**: Once you confirm direction (or immediately when `brainstormFirst` is `false` and requirements are clear), the planner adds tasks (strings or `{ title, allowedPaths }`) and verification checks with `relay_plan_add`.
 3. **Approve plan**: Calling `relay_plan_submit` opens OpenCode's native `relay.approve` permission prompt pinned to the exact `planRevision`. Unneeded drafts can be closed with `relay_plan_cancel`, and pending requests can be withdrawn via `/relay-withdraw` or the GUI.
 4. **Build, verify, review**:
@@ -133,7 +135,7 @@ Confirmed settings are validated by `validateSettings()` and persisted to plugin
 
 | Command | Description |
 | :--- | :--- |
-| `/relay <task>` | Create a `draft` Relay record, switch to the configured `planner` model, brainstorm first (when `brainstormFirst` is enabled), and draft/submit a plan for human approval |
+| `/relay <task>` | Verify `builder` and `reviewer` models are configured (failing fast to `/relay-configure` if missing), create a `draft` Relay record, switch to `roles.planner` when set, brainstorm first (when `brainstormFirst` is enabled), and draft/submit a plan for human approval |
 | `/relay-configure` | Discover enabled OpenCode models and image capabilities, run the 10-question batched setup prompt, and save validated settings via `relay_config_set` |
 
 ### TUI & Desktop Panel Commands (Zero-Token)
@@ -178,7 +180,7 @@ Confirmed settings are validated by `validateSettings()` and persisted to plugin
 
 `src/planner.ts` registers `/relay`, `/relay-configure`, and the six planner tools (`relay_plan_add`, `relay_plan_submit`, `relay_plan_cancel`, `relay_status`, `relay_explore`, `relay_config_set`):
 
-- When `/relay <task>` runs, Relay creates a `draft` record bound to `input.sessionID`, records the session's starting token totals (`tokensAtStart`), switches the session model to `roles.planner`, and restores `previousModel` (recording `tokensAtEnd`) when the plan is submitted, cancelled, or closed.
+- When `/relay <task>` runs, Relay first checks effective configuration for `models.builder` and `models.reviewer` and fails fast with a `/relay-configure` message if either is missing (before creating a draft record, switching models, or prompting). When configured, it creates a `draft` record bound to `input.sessionID`, records the session's starting token totals (`tokensAtStart`), switches the session model to `roles.planner` if configured (otherwise keeping the current session model), and restores `previousModel` (recording `tokensAtEnd`) when the plan is submitted, cancelled, or closed.
 - When `brainstormFirst !== false`, the prompt enforces **Phase 1: Brainstorm first** (prohibiting `relay_plan_add` and `relay_plan_submit` until read-only exploration, 2-3 approaches with tradeoffs/risks/non-goals, and `question` alignment complete) followed by **Phase 2: Draft and submit plan**. When `brainstormFirst === false`, the planner clarifies only when requirements are ambiguous, conflicting, or high-risk.
 - `relay_explore` launches a read-only child session using `roles.explorer` with `edit`, `write`, `shell`, `subagent`, `question`, `relay.*`, and all planner/worker tools denied.
 
@@ -283,7 +285,7 @@ Configure defaults under `"options"` in `~/.config/opencode/opencode.jsonc`, or 
 
 | Option | Env Variable | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `roles.<role>` | *(none)* | *(unset)* | `{ providerID, id, variant? }` assignment for `planner`, `builder`, `reviewer` (must support `image` input), and optional `explorer` |
+| `roles.<role>` | *(none)* | *(unset)* | `{ providerID, id, variant? }` assignment. No default models are shipped: `builder` and `reviewer` (must support `image` input) are required before `/relay` starts; `planner` is optional (uses the current session model if unset) and `explorer` is optional (omits `relay_explore` if unset) |
 | `limits.maxRunningTasks` | *(none)* | `1` | Maximum concurrent tasks (`1` to `4` via `/relay-configure`) |
 | `limits.maxFixCycles` | *(none)* | `2` | Maximum builder fix retries per task after reviewer `changes` verdicts (`0` to `5` via `/relay-configure`) |
 | `widths` | *(none)* | `[1280, 390]` | `1` to `4` integer viewport widths (`320` to `3840`) required for Playwright UI checks and reviewer visual checks |

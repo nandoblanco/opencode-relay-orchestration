@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0 (2026-11-27)
+
+- Fail fast in `/relay` (`src/planner.ts`) before creating a draft record, switching models, or prompting when required worker roles (`builder`, `reviewer`) are not configured, pointing the user to `/relay-configure`.
+- Documented the no-default-models behavior, up-front `builder`/`reviewer` check, and optional `planner`/`explorer` fallbacks in `README.md`.
+
 ## 0.3.0 (2026-11-26)
 
 - Add `brainstormFirst` configuration option (default `true`) to `src/config.ts`, `src/rpc.ts`, `src/server.ts`, and `src/planner.ts`. When enabled, `/relay` leads with an explicit two-phase prompt (**Phase 1: Brainstorm first**, blocking `relay_plan_add` / `relay_plan_submit` until the planner explores read-only, presents 2-3 approaches with tradeoffs, risks, and non-goals, and aligns via `question`; **Phase 2: Draft and submit** only after the user confirms direction, or `relay_plan_cancel` if abandoned). Expose the toggle in `/relay-configure` (10 batched questions: 4 jobs + 6 settings), `relay_config_set`, `validateConfig`, and `configSummary` (`brainstorm on|off`).

@@ -66,7 +66,7 @@ for (const mode of ['valid', 'no-model', 'no-session-model', 'switch-failure', '
   const store = createStore(memoryStorage(), { directory: '/project', projectID: 'project' })
   const events: string[] = []; let command: any
   const model = { providerID: 'test', id: 'planner', variant: 'high' }
-  const ctx = { command: { transform: async (edit: any) => { edit({ add: (value: any) => { if (value.name === 'relay') command = value } }); return { dispose: async () => {} } } }, tool: { transform: async () => ({ dispose: async () => {} }) },
+  const ctx = { options: { roles: { builder: { providerID: 'test', id: 'build' }, reviewer: { providerID: 'test', id: 'review' } } }, command: { transform: async (edit: any) => { edit({ add: (value: any) => { if (value.name === 'relay') command = value } }); return { dispose: async () => {} } } }, tool: { transform: async () => ({ dispose: async () => {} }) },
     session: { get: async () => ({ ...(mode === 'no-session-model' ? {} : { model: { providerID: 'test', id: 'original' } }), tokens: { input: 1, output: 2, reasoning: 0, cache: { read: 3, write: 0 } } }), switchModel: async ({ model }: any) => { events.push(`switch:${model.id}`); if (mode === 'switch-failure') throw Error('switch failed') }, prompt: async () => { events.push('prompt') } },
   } as unknown as Plugin.Context
   if (mode === 'create-failure') t.mock.method(store, 'create', async () => { throw Error('create failed') })
@@ -123,7 +123,7 @@ for (const stage of ['prompt', 'wait', 'context', 'get']) test(`explorer ${stage
   await assert.rejects(tool.execute({ question: 'Read only' }, { sessionID: 'parent', signal: new AbortController().signal }), /Explorer could not complete\. Inspect its child session before retrying\./)
   assert.deepEqual(interrupted, ['explorer-failure'])
 })
-async function harness(staleStart = false, plannerModel = false, restoreFailure = false) {
+async function harness(staleStart = false, plannerModel = false, restoreFailure = false, roles?: Record<string, unknown>) {
   const storage = memoryStorage(); const tools = new Map<string, any>(); const prompts: any[] = []; const created: any[] = []
   const switches: string[] = []
   const permissions: any[] = []; const commands = new Map<string, any>(); const events: any[] = []
@@ -133,7 +133,7 @@ async function harness(staleStart = false, plannerModel = false, restoreFailure 
     const value = await storage.get(key) as any
     if (staleStart && value?.phase === 'approved' && ++approvedReads === 2) { value.revision++; await storage.set(key, value) }
     return value
-  } }, options: { enableProbe: true, roles: { builder: { providerID: 'test', id: 'build' }, ...(plannerModel ? { planner: { providerID: 'test', id: 'planner' } } : {}) } }, location: { directory: '/project', project: { id: 'project' } },
+  } }, options: { enableProbe: true, roles: roles ?? { builder: { providerID: 'test', id: 'build' }, reviewer: { providerID: 'test', id: 'review' }, ...(plannerModel ? { planner: { providerID: 'test', id: 'planner' } } : {}) } }, location: { directory: '/project', project: { id: 'project' } },
     command: { transform: async (edit: any) => { edit({ add: (value: any) => { commands.set(value.name, value); if (value.name === 'relay') command = value } }); return { dispose: async () => {} } } },
     tool: { transform: async (edit: any) => { edit({ add: (value: any) => tools.set(value.name, value) }); return { dispose: async () => {} } } },
     permission: { hook: async () => ({ dispose: async () => {} }), list: async () => [], reply: async () => {}, assert: async () => new Promise<void>((resolve, fail) => { allow = resolve; reject = fail }) },
@@ -533,4 +533,26 @@ test('relay_plan_add accepts scoped task objects and rejects invalid allowedPath
   assert.equal(tasks.length, 2)
   assert.equal(tasks[0].allowedPaths, undefined)
   assert.deepEqual(tasks[1].allowedPaths, ['src/report.ts', 'test/*.ts'])
+})
+test('/relay fails fast before creating a draft when builder or reviewer models are not configured', async () => {
+  const empty = await harness(false, false, false, {})
+  await assert.rejects(
+    empty.command().execute({ sessionID: 'parent', prompt: { text: 'Ship feature' } }),
+    /Relay models are not configured for: builder, reviewer\. Run \/relay-configure before running \/relay\./,
+  )
+  assert.equal((await empty.store.list()).length, 0)
+  assert.deepEqual(empty.prompts, [])
+  assert.deepEqual(empty.switches, [])
+  const partial = await harness(false, false, false, { builder: { providerID: 'test', id: 'build' } })
+  await assert.rejects(
+    partial.command().execute({ sessionID: 'parent', prompt: { text: 'Ship feature' } }),
+    /Relay models are not configured for: reviewer\. Run \/relay-configure before running \/relay\./,
+  )
+  assert.equal((await partial.store.list()).length, 0)
+  assert.deepEqual(partial.prompts, [])
+  const ready = await harness(false, false, false, { builder: { providerID: 'test', id: 'build' }, reviewer: { providerID: 'test', id: 'review' } })
+  await ready.command().execute({ sessionID: 'parent', prompt: { text: 'Ship feature' } })
+  assert.equal((await ready.store.list()).length, 1)
+  assert.equal(ready.prompts.length, 1)
+  assert.deepEqual(ready.switches, [])
 })

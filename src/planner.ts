@@ -55,8 +55,11 @@ export async function registerPlanner(ctx: Plugin.Context, planner: Planner) {
       if ((await planner.store.list()).some(record => record.sessionID === input.sessionID && !['completed', 'cancelled'].includes(record.phase))) throw new Tool.Error({ message: 'This session already owns an active Relay record. Finish or cancel it before running /relay again.' })
       const title = planner.cleanTitle(input.prompt.text, 500)
       if (!title) throw new Tool.Error({ message: 'Use /relay <task> with a nonempty task description.' })
+      const base = effectiveConfig(ctx.options)
+      const configured = planner.config ? await planner.config() : { ...base, models: { ...base.models, ...(planner.model ? { planner: planner.model } : {}), ...(planner.explorer ? { explorer: planner.explorer } : {}) } }
+      const missing = (['builder', 'reviewer'] as const).filter(role => !configured.models[role])
+      if (missing.length) throw new Tool.Error({ message: `Relay models are not configured for: ${missing.join(', ')}. Run /relay-configure before running /relay.` })
       const session = await ctx.session.get({ sessionID: input.sessionID })
-      const configured = planner.config ? await planner.config() : { ...effectiveConfig(ctx.options), models: { ...(planner.model ? { planner: planner.model } : {}), ...(planner.explorer ? { explorer: planner.explorer } : {}) } }
       const plannerModel = configured ? configured.models.planner : planner.model
       let model = session.model
       let switched = false
