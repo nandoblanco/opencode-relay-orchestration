@@ -20,6 +20,7 @@ for (const explorer of [true, false]) test(`planner prompt effective exploration
   assert.match(text, /^Brainstorm and plan the following task using Relay record/)
   assert.match(text, /PHASE 1: BRAINSTORM FIRST \(REQUIRED BEFORE ANY PLAN TOOLS\)/)
   assert.match(text, /Do NOT call relay_plan_add or relay_plan_submit yet/)
+  assert.match(text, /already supplied a concrete plan or explicitly asks to skip brainstorming.*Draft as-is/)
   assert.match(text, /PHASE 2: DRAFT AND SUBMIT PLAN \(ONLY AFTER USER CONFIRMS DIRECTION\)/)
   assert.match(text, /already satisfied, do not submit; call relay_plan_cancel/)
 })

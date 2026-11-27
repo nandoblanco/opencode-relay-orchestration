@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added a respect-pasted-plan clause to Phase 1 in `src/planner.ts`: when a user supplies a concrete plan or asks to skip brainstorming, the planner flags concrete risks or gaps and asks one confirmation question (`Draft as-is` vs `Adjust plan`) instead of inventing competing approaches.
+
 ## 1.0.0 (2026-11-27)
 
 - Fail fast in `/relay` (`src/planner.ts`) before creating a draft record, switching models, or prompting when required worker roles (`builder`, `reviewer`) are not configured, pointing the user to `/relay-configure`.
