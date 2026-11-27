@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 (2026-11-27)
 
-- Added a respect-pasted-plan clause to Phase 1 in `src/planner.ts`: when a user supplies a concrete plan or asks to skip brainstorming, the planner flags concrete risks or gaps and asks one confirmation question (`Draft as-is` vs `Adjust plan`) instead of inventing competing approaches.
+- Added a respect-pasted-plan clause to Phase 1 in `src/planner.ts` and documented it in `README.md`: when a user supplies a concrete plan or asks to skip brainstorming, the planner flags concrete risks or gaps and asks one confirmation question (`Draft as-is` vs `Adjust plan`) instead of inventing competing approaches.
 
 ## 1.0.0 (2026-11-27)
 
