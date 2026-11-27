@@ -1,0 +1,12 @@
+node_modules/
+.backups/
+**/.backups/
+.screenshots/
+**/.screenshots/
+*.log
+*.tgz
+.DS_Store
+HANDOFF*.md
+M[1-9]-*.md
+test/tui-*.json
+test/cycle*-screenshot-hashes.json

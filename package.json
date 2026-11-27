@@ -1,0 +1,85 @@
+{
+  "name": "@nandoblanco/opencode-relay-orchestration",
+  "version": "0.3.0",
+  "description": "Multi-model plan, build, verify, and review orchestration plugin for OpenCode.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "relay",
+    "orchestration",
+    "multi-model",
+    "verification",
+    "playwright",
+    "tui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nandoblanco/opencode-relay-orchestration.git"
+  },
+  "homepage": "https://github.com/nandoblanco/opencode-relay-orchestration#readme",
+  "bugs": {
+    "url": "https://github.com/nandoblanco/opencode-relay-orchestration/issues"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./tui": "./src/tui.ts",
+    "./gui-experimental": "./dist/gui-experimental.cjs",
+    "./rpc": "./src/rpc.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "assets/screenshot.png",
+    "assets/screenshot-tui.png",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --no-warnings --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "test:gui": "node test/gui-smoke.mjs"
+  },
+  "engines": {
+    "node": "^22.15.0 || >=23.5.0"
+  },
+  "author": "nandoblanco",
+  "license": "MIT",
+  "dependencies": {
+    "@opencode/plugin": "2.3.2"
+  },
+  "peerDependencies": {
+    "solid-js": ">=1.9.0",
+    "@opentui/core": ">=0.8.4",
+    "@opentui/solid": ">=0.8.4"
+  },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": true
+    },
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.18",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.5",
+    "vite-plugin-solid": "^2.11.15",
+    "playwright": "^1.56.0",
+    "@opentui/solid": "0.9.4",
+    "@opentui/core": "0.9.4"
+  }
+}

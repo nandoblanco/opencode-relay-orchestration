@@ -1,0 +1,13 @@
+.backups/
+**/.backups/
+.screenshots/
+**/.screenshots/
+node_modules/
+test/
+tsconfig.json
+vite.config.ts
+HANDOFF*.md
+M[1-9]-*.md
+*.log
+*.tgz
+.DS_Store
